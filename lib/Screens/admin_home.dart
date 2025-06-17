@@ -21,7 +21,7 @@ class _AdminHomeState extends State<AdminHome> {
   Future<List<Map<String, dynamic>>> fetchAllUsers() async {
     final snapshot = await FirebaseFirestore.instance
         .collection('users')
-        .where('role', isNotEqualTo: "admin")
+        .where('role', isEqualTo: "user")
         .get();
     return snapshot.docs
         .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
