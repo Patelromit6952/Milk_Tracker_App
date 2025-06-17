@@ -16,13 +16,14 @@ class UserHome extends StatefulWidget {
 }
 
 class _UserHomeState extends State<UserHome> {
+
   late Future<List<Map<String, dynamic>>> _entriesFuture ;
   double totalMilk = 0.0;
   double totalSpent = 0.0;
 
   String formatDate(Timestamp timestamp) {
     final dt = timestamp.toDate();
-    return DateFormat('dd MM, yyyy').format(dt);
+    return DateFormat('dd-MM-yyyy').format(dt);
   }
 
   @override
@@ -82,15 +83,17 @@ class _UserHomeState extends State<UserHome> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text("Welcome, ${widget.name}",style: const TextStyle(
-          textBaseline: TextBaseline.alphabetic,
-          letterSpacing: 1.5,
-          fontWeight: FontWeight.bold
-        ),),
+        title: Text("Welcome, ${widget.name}",
+          style: const TextStyle(
+            textBaseline: TextBaseline.alphabetic,
+            letterSpacing: 1.5,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.grey[100],
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
               Navigator.pushAndRemoveUntil(
@@ -102,39 +105,27 @@ class _UserHomeState extends State<UserHome> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: _entriesFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: Colors.blue,));
-            }
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _entriesFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Colors.blue));
+          }
 
-            // if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            //   return const Center(
-            //     child: Text(
-            //       "No entries for this month.",
-            //       style: TextStyle(fontSize: 16, color: Colors.black54),
-            //     ),
-            //   );
-            // }
+          final allEntries = snapshot.data ?? [];
 
-            final allEntries = snapshot.data!;
-
-            return Column(
-              children: [
-                Card(
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Card(
                   color: Colors.white,
                   elevation: 5,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 16,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                     child: Column(
                       children: [
                         Text(
@@ -145,106 +136,129 @@ class _UserHomeState extends State<UserHome> {
                             color: Colors.blue[800],
                           ),
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
                             Column(
                               children: [
-                                Text("Total Milk", style: TextStyle(color: Colors.black87)),
+                                const Text("Total Milk", style: TextStyle(color: Colors.black87)),
                                 Text("${totalMilk.toStringAsFixed(2)} L",
-                                    style: TextStyle(fontWeight: FontWeight.bold)),
+                                    style: const TextStyle(fontWeight: FontWeight.bold)),
                               ],
                             ),
                             Column(
                               children: [
-                                Text("Total Spent", style: TextStyle(color: Colors.black87)),
+                                const Text("Total Spent", style: TextStyle(color: Colors.black87)),
                                 Text("₹ ${totalSpent.toStringAsFixed(2)}",
-                                    style: TextStyle(fontWeight: FontWeight.bold)),
+                                    style: const TextStyle(fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ],
-                        )
+                        ),
                       ],
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
-                Expanded(
-                  child: ListView.builder(
+              ),
+
+              // Entry List with Refresh
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    setState(() {
+                      _entriesFuture = fetchCurrentMonthEntries();
+                    });
+                  },
+                  color: Colors.blue,
+                  child: allEntries.isEmpty
+                      ? const Center(
+                    child: Text(
+                      "No entries for this month.",
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                    ),
+                  )
+                      : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 100),
                     itemCount: allEntries.length,
                     itemBuilder: (context, index) {
                       final entry = allEntries[index];
-                      return Card(
-                        margin: EdgeInsets.symmetric(vertical: 8),
-                        color: Colors.blue[50],
-                        elevation: 3,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ListTile(
-                          leading: Icon(Icons.local_drink, color: Colors.blue[800]),
-                          title: Text("${entry['quantity']} L | ₹${entry['price']}"),
-                          subtitle: Text(
-                            "Date: ${entry['date'] != null ? formatDate(entry['date']) : 'Unknown'}",
-                            style: TextStyle(color: Colors.grey[700]),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        child: Card(
+                          color: Colors.blue[50],
+                          elevation: 3,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            leading: Icon(Icons.local_drink, color: Colors.blue[800]),
+                            title: Text("${entry['quantity']} L | ₹${entry['price']}"),
+                            subtitle: Text(
+                              "Date: ${entry['date'] != null ? formatDate(entry['date']) : 'Unknown'}",
+                              style: TextStyle(color: Colors.grey[700]),
+                            ),
                           ),
                         ),
                       );
                     },
                   ),
                 ),
-                SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      icon: Icon(Icons.add),
-                      label: Text("Add Entry"),
-                      onPressed: () async {
-                        final updated = await Navigator.pushNamed(
-                          context,
-                          '/add-entry',
-                        );
-                        if (updated == true) {
-                          setState(() {
-                            _entriesFuture = fetchCurrentMonthEntries();
-                          });
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[600],
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
+              ),
+            ],
+          );
+        },
+      ),
+
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text("Add Entry"),
+                onPressed: () async {
+                  final updated = await Navigator.pushNamed(context, '/add-entry');
+                  if (updated == true) {
+                    setState(() {
+                      _entriesFuture = fetchCurrentMonthEntries();
+                    });
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[600],
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.history),
+                label: const Text("Previous Entries"),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PreviousEntriesScreen(userId: widget.userId),
                     ),
-                    ElevatedButton.icon(
-                      icon: Icon(Icons.history),
-                      label: Text("Previous Entries"),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PreviousEntriesScreen(userId: widget.userId),
-                          ),
-                        );                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[300],
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              ],
-            );
-          },
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[300],
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
+
     );
+
   }
 }

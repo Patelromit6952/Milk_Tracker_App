@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +12,7 @@ class AddUserScreen extends StatefulWidget {
 }
 
 class _AddUserScreenState extends State<AddUserScreen> {
+
   final _formKey = GlobalKey<FormState>();
   String name = '';
   String email = '';
@@ -31,9 +34,10 @@ class _AddUserScreenState extends State<AddUserScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User added successfully')),
+        const SnackBar(content: Text('User added successfully'),backgroundColor: Colors.green,),
       );
-      Navigator.pop(context, true);
+      Navigator.pushNamedAndRemoveUntil(context, '/adminHome', (route) => false);
+
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -43,7 +47,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
       setState(() => isLoading = false);
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,7 +75,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
                     decoration: InputDecoration(
                       labelText: 'Name',
                         labelStyle: TextStyle(
-                          color: Colors.black, // 👈 label text color
+                          color: Colors.black,
                           fontSize: 14,
                         ),
                       prefixIcon: const Icon(Icons.person,color: Colors.blue,),
@@ -89,7 +92,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
                     decoration: InputDecoration(
                       labelText: 'Email',
                         labelStyle: TextStyle(
-                          color: Colors.black, // 👈 label text color
+                          color: Colors.black,
                           fontSize: 14,
                         ),
                       prefixIcon: const Icon(Icons.email,color: Colors.blue,),
@@ -107,13 +110,13 @@ class _AddUserScreenState extends State<AddUserScreen> {
                     decoration: InputDecoration(
                       labelText: 'Role',
                       labelStyle: TextStyle(
-                        color: Colors.black, // 👈 label text color
+                        color: Colors.black,
                         fontSize: 14,
                       ),
                       prefixIcon: const Icon(Icons.security,color: Colors.blue,),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.blue), // on focus
+                          borderSide: BorderSide(color: Colors.blue),
                         )
                     ),
                     items: ['user', 'admin']

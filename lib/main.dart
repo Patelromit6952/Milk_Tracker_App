@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
         '/add-entry': (_) => const AddEntryScreen(),
         '/previous-entries': (_) => const PreviousEntriesScreen(),
         '/add-customer': (context) => const AddUserScreen(),
-      },// Handles auto-login
+        '/adminHome': (context) => const AdminHome(),      },// Handles auto-login
     );
   }
 }

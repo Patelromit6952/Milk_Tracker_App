@@ -80,7 +80,7 @@ class _PreviousEntriesScreenState extends State<PreviousEntriesScreen> {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text('Previous Entries',style: TextStyle(color: Colors.white),),
-        backgroundColor: Colors.lightBlue[400],
+        backgroundColor: Colors.blue,
         elevation: 0,
       ),
       body: Padding(
@@ -157,7 +157,7 @@ class _PreviousEntriesScreenState extends State<PreviousEntriesScreen> {
                     margin: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.lightBlue[100]!, Colors.white],
+                        colors: [Colors.blue[100]!, Colors.white],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -173,7 +173,7 @@ class _PreviousEntriesScreenState extends State<PreviousEntriesScreen> {
                     child: ListTile(
                       leading: CircleAvatar(
                         radius: 24,
-                        backgroundColor: Colors.lightBlue[300],
+                        backgroundColor: Colors.blue[300],
                         child: Text(
                           monthName.substring(0, 3),
                           style: const TextStyle(

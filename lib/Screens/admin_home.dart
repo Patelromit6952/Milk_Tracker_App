@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:milk_app/Screens/HomeScreen.dart';
@@ -11,6 +12,12 @@ class AdminHome extends StatefulWidget {
 }
 
 class _AdminHomeState extends State<AdminHome> {
+  User? user = FirebaseAuth.instance.currentUser;
+  @override
+  void initState() {
+    fetchAllUsers();
+  }
+
   Future<List<Map<String, dynamic>>> fetchAllUsers() async {
     final snapshot = await FirebaseFirestore.instance
         .collection('users')
