@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:milk_app/Screens/AddEntry.dart';
-import 'package:milk_app/Screens/add_user_screen.dart';
 import 'package:milk_app/Screens/admin_home.dart';
 import 'package:milk_app/Screens/previous_entries.dart';
+import 'package:milk_app/Screens/spalsh_screen.dart';
 import 'Screens/HomeScreen.dart';
 import 'Screens/login_screen.dart';
 
@@ -24,11 +24,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Milk Tracker',
       theme: ThemeData(primarySwatch: Colors.green),
-      home: const AuthGate(),
+      home: SplashScreen(),
       routes: {
         '/add-entry': (_) => const AddEntryScreen(),
         '/previous-entries': (_) => const PreviousEntriesScreen(),
-        '/add-customer': (context) => const AddUserScreen(),
         '/adminHome': (context) => const AdminHome(),
       },
     );
@@ -37,6 +36,30 @@ class MyApp extends StatelessWidget {
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
+
+  Future<Map<String, dynamic>?> _getUserData(String uid) async {
+    // Try to get admin document
+    final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(uid).get();
+    if (adminDoc.exists) {
+      final data = adminDoc.data();
+      if (data != null) {
+        data['role'] = 'admin'; // Tag explicitly
+      }
+      return data;
+    }
+
+    // Try to get user document
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    if (userDoc.exists) {
+      final data = userDoc.data();
+      if (data != null) {
+        data['role'] = 'user'; // Tag explicitly
+      }
+      return data;
+    }
+
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,16 +72,15 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        // User is NOT logged in
+        // User is not logged in
         if (!snapshot.hasData || snapshot.data == null) {
           return const LoginScreen();
         }
 
-        // User is logged in
         final user = snapshot.data!;
 
-        return FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+        return FutureBuilder<Map<String, dynamic>?>(
+          future: _getUserData(user.uid),
           builder: (context, userSnapshot) {
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
@@ -67,31 +89,21 @@ class AuthGate extends StatelessWidget {
             }
 
             if (userSnapshot.hasError) {
-              print("Firestore user fetch error: ${userSnapshot.error}");
-
               return const Scaffold(
-                body: Center(child: Text("Something went wrong while fetching user data")),
+                body: Center(child: Text("Error loading profile")),
               );
             }
 
-            final doc = userSnapshot.data;
+            final userData = userSnapshot.data;
 
-            if (doc == null || !doc.exists) {
-              // Auto-create user document if missing
-              FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-                'name': user.displayName ?? '',
-                'email': user.email ?? '',
-                'role': 'user', // default role, change if needed
-              });
-
+            // No user data found in either collection
+            if (userData == null) {
               return const Scaffold(
-                body: Center(child: Text("Creating user profile... Please restart the app.")),
+                body: Center(child: Text("User record not found")),
               );
             }
 
-            final userData = doc.data() as Map<String, dynamic>?;
-
-            final role = userData?['role'];
+            final role = userData['role'];
 
             if (role == 'admin') {
               return const AdminHome();
@@ -99,10 +111,10 @@ class AuthGate extends StatelessWidget {
               return UserHome(
                 userId: user.uid,
                 email: user.email,
-                name: userData?['name'] ?? 'User',
+                name: userData['name'] ?? 'User',
               );
             } else {
-              return const Scaffold(body: Center(child: Text("Invalid role in profile")));
+              return const Scaffold(body: Center(child: Text("Invalid role")));
             }
           },
         );
@@ -110,3 +122,4 @@ class AuthGate extends StatelessWidget {
     );
   }
 }
+

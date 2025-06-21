@@ -4,19 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:milk_app/Screens/login_screen.dart';
 import 'package:milk_app/Screens/previous_entries.dart';
-import 'package:milk_app/Screens/user_profile.dart';
 
-class UserHome extends StatefulWidget {
+class AdminUserScreen extends StatefulWidget {
   final String userId;
   final String? email;
   final String? name;
-  const UserHome({super.key, required this.userId,  this.email,  this.name});
+  const AdminUserScreen({super.key, required this.userId,  this.email,  this.name});
 
   @override
-  State<UserHome> createState() => _UserHomeState();
+  State<AdminUserScreen> createState() => _UserHomeState();
 }
 
-class _UserHomeState extends State<UserHome> {
+class _UserHomeState extends State<AdminUserScreen> {
 
   late Future<List<Map<String, dynamic>>> _entriesFuture ;
   double totalMilk = 0.0;
@@ -84,20 +83,7 @@ class _UserHomeState extends State<UserHome> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        leading: GestureDetector(
-          onTap: (){
-            Navigator.push(context, MaterialPageRoute(builder: (context) => UserProfile()));
-          },
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.blue[50],
-              child: Icon(Icons.person,color: Colors.blue,),
-            ),
-          ),
-        ),
-        title: Text("Welcome, ${widget.name}",
+        title: Text("${widget.name}'s Data Summary",
           style: const TextStyle(
             textBaseline: TextBaseline.alphabetic,
             letterSpacing: 1.5,
@@ -105,19 +91,6 @@ class _UserHomeState extends State<UserHome> {
           ),
         ),
         backgroundColor: Colors.grey[100],
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
-              );
-            },
-          ),
-        ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _entriesFuture,
@@ -229,25 +202,6 @@ class _UserHomeState extends State<UserHome> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text("Add Entry"),
-                onPressed: () async {
-                  final updated = await Navigator.pushNamed(context, '/add-entry');
-                  if (updated == true) {
-                    setState(() {
-                      _entriesFuture = fetchCurrentMonthEntries();
-                    });
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[600],
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
             const SizedBox(width: 16),
             Expanded(
               child: ElevatedButton.icon(

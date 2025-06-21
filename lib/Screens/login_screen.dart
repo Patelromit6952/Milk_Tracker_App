@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final roleDoc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
       debugPrint(roleDoc.data()?['name']);
       final role = roleDoc.data()?['role'];
-    debugPrint(role);
+      debugPrint(role);
       if (role == 'admin') {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AdminHome()));
       } else if (role == 'user') {
