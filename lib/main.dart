@@ -1,13 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:milk_app/Screens/AddEntry.dart';
-import 'package:milk_app/Screens/admin_home.dart';
-import 'package:milk_app/Screens/previous_entries.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:milk_app/Screens/spalsh_screen.dart';
+
 import 'Screens/HomeScreen.dart';
 import 'Screens/login_screen.dart';
+import 'Screens/admin_home.dart';
+import 'Screens/AddEntry.dart';
+import 'Screens/previous_entries.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +29,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/add-entry': (_) => const AddEntryScreen(),
         '/previous-entries': (_) => const PreviousEntriesScreen(),
-        '/adminHome': (context) => const AdminHome(),
+        '/adminHome': (_) => const AdminHome(),
       },
     );
   }
@@ -37,27 +38,24 @@ class MyApp extends StatelessWidget {
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
-  Future<Map<String, dynamic>?> _getUserData(String uid) async {
-    // Try to get admin document
+  Future<Map<String, dynamic>?> _getUserData(User firebaseUser) async {
+    final uid = firebaseUser.uid;
+
+    // Check admin collection
     final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(uid).get();
     if (adminDoc.exists) {
-      final data = adminDoc.data();
-      if (data != null) {
-        data['role'] = 'admin'; // Tag explicitly
-      }
+      final data = adminDoc.data()!..['role'] = 'admin';
       return data;
     }
 
-    // Try to get user document
+    // Check users collection
     final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
     if (userDoc.exists) {
-      final data = userDoc.data();
-      if (data != null) {
-        data['role'] = 'user'; // Tag explicitly
-      }
+      final data = userDoc.data()!..['role'] = 'user';
       return data;
     }
 
+    // User not found in either collection
     return null;
   }
 
@@ -72,7 +70,6 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        // User is not logged in
         if (!snapshot.hasData || snapshot.data == null) {
           return const LoginScreen();
         }
@@ -80,7 +77,7 @@ class AuthGate extends StatelessWidget {
         final user = snapshot.data!;
 
         return FutureBuilder<Map<String, dynamic>?>(
-          future: _getUserData(user.uid),
+          future: _getUserData(user),
           builder: (context, userSnapshot) {
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
@@ -88,21 +85,13 @@ class AuthGate extends StatelessWidget {
               );
             }
 
-            if (userSnapshot.hasError) {
+            if (userSnapshot.hasError || userSnapshot.data == null) {
               return const Scaffold(
-                body: Center(child: Text("Error loading profile")),
+                body: Center(child: Text("User profile not found or unauthorized.")),
               );
             }
 
-            final userData = userSnapshot.data;
-
-            // No user data found in either collection
-            if (userData == null) {
-              return const Scaffold(
-                body: Center(child: Text("User record not found")),
-              );
-            }
-
+            final userData = userSnapshot.data!;
             final role = userData['role'];
 
             if (role == 'admin') {
@@ -114,7 +103,9 @@ class AuthGate extends StatelessWidget {
                 name: userData['name'] ?? 'User',
               );
             } else {
-              return const Scaffold(body: Center(child: Text("Invalid role")));
+              return const Scaffold(
+                body: Center(child: Text("Invalid user role.")),
+              );
             }
           },
         );
@@ -122,4 +113,3 @@ class AuthGate extends StatelessWidget {
     );
   }
 }
-

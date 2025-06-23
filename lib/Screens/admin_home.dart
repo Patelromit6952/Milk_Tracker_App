@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:milk_app/Screens/admin_profile.dart';
 import 'package:milk_app/Screens/admin_user_screen.dart';
 import 'package:milk_app/Screens/login_screen.dart';
-import 'package:milk_app/Screens/user_profile.dart';
 
 class AdminHome extends StatefulWidget {
   const AdminHome({super.key});
@@ -16,10 +15,16 @@ class AdminHome extends StatefulWidget {
 class _AdminHomeState extends State<AdminHome> {
   User? user = FirebaseAuth.instance.currentUser;
   late Future<List<Map<String, dynamic>>> usersFuture;
+  bool isInitialLoad = true;
+
   @override
   void initState() {
     super.initState();
-    usersFuture = fetchAllUsers();
+    usersFuture = fetchAllUsers().whenComplete(() {
+      setState(() {
+        isInitialLoad = false;
+      });
+    });
   }
 
   Future<List<Map<String, dynamic>>> fetchAllUsers() async {
@@ -32,16 +37,14 @@ class _AdminHomeState extends State<AdminHome> {
 
     final adminData = adminDoc.data();
     if (adminData == null || !(adminData['users'] is List)) {
-      print("No 'users' found  for  admin.");
+      print("No 'users' found for admin.");
       return [];
     }
 
-    final List<dynamic> allowedUserNames = adminData['users']; // List of user names
+    final List<dynamic> allowedUserNames = adminData['users'];
 
-    // If names list is empty, return empty list
     if (allowedUserNames.isEmpty) return [];
 
-    // Fetch all users and filter by allowed names
     final snapshot = await FirebaseFirestore.instance
         .collection('users')
         .where('name', whereIn: allowedUserNames)
@@ -52,13 +55,21 @@ class _AdminHomeState extends State<AdminHome> {
         .toList();
   }
 
+  Future<void> _refreshUsers() async {
+    setState(() {
+      isInitialLoad = false;
+      usersFuture = fetchAllUsers();
+    });
+    await usersFuture;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100], // Light background
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         leading: GestureDetector(
-          onTap: (){
+          onTap: () {
             Navigator.push(context, MaterialPageRoute(builder: (context) => AdminProfile()));
           },
           child: Padding(
@@ -66,7 +77,7 @@ class _AdminHomeState extends State<AdminHome> {
             child: CircleAvatar(
               radius: 18,
               backgroundColor: Colors.blue[50],
-              child: Icon(Icons.person,color: Colors.blue,),
+              child: const Icon(Icons.person, color: Colors.blue),
             ),
           ),
         ),
@@ -89,72 +100,79 @@ class _AdminHomeState extends State<AdminHome> {
           ),
         ],
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: usersFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Colors.blue,));
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text(
-                'No users found.',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            );
-          }
+      body: RefreshIndicator(
+        color: Colors.blue,
+        onRefresh: _refreshUsers,
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: usersFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting && isInitialLoad) {
+              return const Center(child: CircularProgressIndicator(color: Colors.blue));
+            }
 
-          final users = snapshot.data!;
+            if (snapshot.hasError) {
+              return Center(child: Text("Error: ${snapshot.error}"));
+            }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              final user = users[index];
-              return Card(
-                elevation: 3,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.blue[100],
-                    child: Icon(Icons.person, color: Colors.blue[700]),
-                  ),
-                  title: Text(
-                    user['name']?.toString().toUpperCase() ?? 'NO NAME',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  subtitle: Text(
-                    user['email'] ?? 'No Email',
-                    style: const TextStyle(color: Colors.black54),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AdminUserScreen(
-                            userId: user['id'],
-                            email: user['email'],
-                            name:user['name']
-                        ),
-                      ),
-                    );
-                  },
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(
+                child: Text(
+                  'No users found.',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               );
-            },
-          );
-        },
+            }
+
+            final users = snapshot.data!;
+
+            return ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(12),
+              itemCount: users.length,
+              itemBuilder: (context, index) {
+                final user = users[index];
+                return Card(
+                  elevation: 3,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blue[100],
+                      child: Icon(Icons.person, color: Colors.blue[700]),
+                    ),
+                    title: Text(
+                      user['name']?.toString().toUpperCase() ?? 'NO NAME',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: Text(
+                      user['email'] ?? 'No Email',
+                      style: const TextStyle(color: Colors.black54),
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AdminUserScreen(
+                            userId: user['id'],
+                            email: user['email'],
+                            name: user['name'],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

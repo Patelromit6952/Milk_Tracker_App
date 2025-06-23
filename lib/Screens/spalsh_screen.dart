@@ -35,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen> {
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Colors.brown[700],
+                color: Colors.blue,
               ),
             ),
             SizedBox(height: 8),
@@ -46,10 +46,6 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: Colors.grey[700],
               ),
             ),
-            SizedBox(height: 40),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-            )
           ],
         ),
       ),
